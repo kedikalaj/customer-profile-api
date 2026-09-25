@@ -2,6 +2,18 @@
 
 A Spring Boot REST API to retrieve and update a customer's profile: name, email and photo.
 
+## Deliverables
+
+| Deliverable | Where |
+|---|---|
+| Source code | this repository (`src/`) |
+| Setup instructions | [Setup](#setup) |
+| Build and run instructions | [Build and run](#build-and-run) |
+| API usage examples | [API](#api) |
+| Key design decisions and assumptions | [Design decisions and assumptions](#design-decisions-and-assumptions) |
+| Test execution instructions | [TESTING.md](TESTING.md) |
+| Code coverage report | [COVERAGE.md](COVERAGE.md) (summary) and [`coverage-report/`](coverage-report/index.html) (full HTML report) |
+
 ## Tech stack
 - Java 21, Spring Boot 4.1, Maven (via the included Maven Wrapper)
 - Spring Web MVC, Spring Data JPA (Hibernate), Jakarta Bean Validation
@@ -121,6 +133,7 @@ Errors use the standard Problem Details format (RFC 9457):
   `CacheErrorHandler` that falls back to the database when Redis is unavailable.
 
 ## Tests
+Full instructions: [TESTING.md](TESTING.md).
 Docker must be running (the Redis tests use Testcontainers).
 ```bash
 ./mvnw test
@@ -137,6 +150,7 @@ Docker must be running (the Redis tests use Testcontainers).
 ./mvnw clean verify
 ```
 The HTML report is written to `target/site/jacoco/index.html`.
+A copy of the latest report is committed in [`coverage-report/`](coverage-report/index.html); see [COVERAGE.md](COVERAGE.md) for the summary.
 
 Current result: **23 tests, all passing. 95% line coverage, 86% branch coverage.**
 

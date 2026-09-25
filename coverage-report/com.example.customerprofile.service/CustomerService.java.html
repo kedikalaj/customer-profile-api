@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CustomerService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">customer-profile-api</a> &gt; <a href="index.source.html" class="el_package">com.example.customerprofile.service</a> &gt; <span class="el_source">CustomerService.java</span></div><h1>CustomerService.java</h1><pre class="source lang-java linenums">package com.example.customerprofile.service;
+
+import com.example.customerprofile.dto.CustomerProfileResponse;
+import com.example.customerprofile.dto.PhotoData;
+import com.example.customerprofile.dto.UpdateCustomerRequest;
+import com.example.customerprofile.exception.CustomerNotFoundException;
+import com.example.customerprofile.exception.EmailAlreadyInUseException;
+import com.example.customerprofile.exception.InvalidPhotoException;
+import com.example.customerprofile.model.Customer;
+import com.example.customerprofile.repository.CustomerRepository;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.stereotype.Service;
+
+import java.util.Set;
+
+@Service
+public class CustomerService {
+
+    static final long MAX_PHOTO_SIZE_BYTES = 2 * 1024 * 1024; // 2 MB
+<span class="fc" id="L22">    private static final Set&lt;String&gt; ALLOWED_PHOTO_TYPES = Set.of(&quot;image/jpeg&quot;, &quot;image/png&quot;);</span>
+
+    private final CustomerRepository customerRepository;
+
+<span class="fc" id="L26">    public CustomerService(CustomerRepository customerRepository) {</span>
+<span class="fc" id="L27">        this.customerRepository = customerRepository;</span>
+<span class="fc" id="L28">    }</span>
+
+    @Cacheable(cacheNames = &quot;customerProfiles&quot;, key = &quot;#id&quot;)
+    public CustomerProfileResponse getProfile(Long id) {
+<span class="fc" id="L32">        return CustomerProfileResponse.from(findCustomer(id));</span>
+    }
+
+    // Stores the returned (updated) profile in the cache, replacing the old one
+    @CachePut(cacheNames = &quot;customerProfiles&quot;, key = &quot;#id&quot;)
+    public CustomerProfileResponse updateProfile(Long id, UpdateCustomerRequest request) {
+<span class="fc" id="L38">        Customer customer = findCustomer(id);</span>
+
+<span class="fc bfc" id="L40" title="All 2 branches covered.">        if (customerRepository.existsByEmailAndIdNot(request.email(), id)) {</span>
+<span class="fc" id="L41">            throw new EmailAlreadyInUseException(request.email());</span>
+        }
+
+<span class="fc" id="L44">        customer.setName(request.name());</span>
+<span class="fc" id="L45">        customer.setEmail(request.email());</span>
+<span class="fc" id="L46">        return CustomerProfileResponse.from(customerRepository.save(customer));</span>
+    }
+
+    @Cacheable(cacheNames = &quot;customerPhotos&quot;, key = &quot;#id&quot;)
+    public PhotoData getPhoto(Long id) {
+<span class="fc" id="L51">        Customer customer = findCustomer(id);</span>
+<span class="fc" id="L52">        return new PhotoData(customer.getPhoto(), customer.getPhotoContentType());</span>
+    }
+
+    // Removes the old photo from the cache; the next read loads the new one from the database
+    @CacheEvict(cacheNames = &quot;customerPhotos&quot;, key = &quot;#id&quot;)
+    public void updatePhoto(Long id, byte[] content, String contentType) {
+<span class="fc" id="L58">        validatePhoto(content, contentType);</span>
+
+<span class="fc" id="L60">        Customer customer = findCustomer(id);</span>
+<span class="fc" id="L61">        customer.setPhoto(content);</span>
+<span class="fc" id="L62">        customer.setPhotoContentType(contentType);</span>
+<span class="fc" id="L63">        customerRepository.save(customer);</span>
+<span class="fc" id="L64">    }</span>
+
+    private Customer findCustomer(Long id) {
+<span class="fc" id="L67">        return customerRepository.findById(id)</span>
+<span class="fc" id="L68">                .orElseThrow(() -&gt; new CustomerNotFoundException(id));</span>
+    }
+
+    private void validatePhoto(byte[] content, String contentType) {
+<span class="pc bpc" id="L72" title="1 of 4 branches missed.">        if (content == null || content.length == 0) {</span>
+<span class="fc" id="L73">            throw new InvalidPhotoException(&quot;Photo file must not be empty&quot;);</span>
+        }
+<span class="fc bfc" id="L75" title="All 2 branches covered.">        if (content.length &gt; MAX_PHOTO_SIZE_BYTES) {</span>
+<span class="fc" id="L76">            throw new InvalidPhotoException(&quot;Photo must be 2 MB or smaller&quot;);</span>
+        }
+<span class="fc bfc" id="L78" title="All 4 branches covered.">        if (contentType == null || !ALLOWED_PHOTO_TYPES.contains(contentType)) {</span>
+<span class="fc" id="L79">            throw new InvalidPhotoException(&quot;Photo must be a JPEG or PNG image&quot;);</span>
+        }
+<span class="fc" id="L81">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
